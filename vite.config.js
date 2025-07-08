@@ -1,9 +1,12 @@
-import { defineConfig } from 'vite';
-import path from 'path';
+
+import { defineConfig } from 'vite'
+import path from 'path'
 
 export default defineConfig({
   base: '/MyProgect/',
   resolve: {
-    alias: { /* ... */ }
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
   }
 })
