@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://natamaz.github.io/MyProgect",
+  "homepage": "https://natamaz.github.io/PortfolioMaz",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
