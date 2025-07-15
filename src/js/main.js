@@ -4,13 +4,14 @@ import {projects} from "./data.js";
 import {vertexShader, fragmentShader} from "./shaders.js";
 
 const config = {
-  cellSize: 0.75,
-  zoomLevel:1.25,
-  lerpFactor:0.075,
-  borderColor:"rgba(255, 255, 255, 0.15)",
-  backgroundColor:"rgba(0, 0, 0, 1)",
-  textColor:"rgba(128, 128, 128, 1)",
-  hoverColor:"rgba(255, 255, 255, 0)",
+  cellSize: 0.4,
+  zoomLevel: 1.25,
+  lerpFactor: 0.075,
+  borderColor: "rgba(255, 255, 255, 0.15)",
+  backgroundColor: "rgba(0, 0, 0, 1)",
+  textColor: "rgba(128, 128, 128, 1)",
+  hoverColor: "rgba(255, 255, 255, 0)",
+  gridColumns: 4,
 };
 let scene, camera, renderer, plane;
 let isDragging = false,
@@ -26,30 +27,31 @@ let textTextures = [];
 
 const rgbaToArray = (rgba) => {
   const match = rgba.match(/rgba?\(([^)]+)\)/);
-if(!match) return [1, 1, 1, 1];
-return match[1]
-  .split(",")
-  .map((v, i) =>
-  i < 3 ? parseFloat(v.trim()) / 255 : parseFloat(v.trim() || 1)
-  );
+  if(!match) return [1, 1, 1, 1];
+  return match[1]
+    .split(",")
+    .map((v, i) =>
+      i < 3 ? parseFloat(v.trim()) / 255 : parseFloat(v.trim() || 1)
+    );
 };
 
 const createTextTexture = (title, year) => {
   const canvas = document.createElement("canvas");
-  canvas.width = 2048;
-  canvas.height = 256;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext("2d");
 
-  ctx.clearRect(0, 0, 2048, 256);
-  ctx.font = "80px IBM Plex Mono";
+  ctx.clearRect(0, 0, 512, 512);
+  ctx.font = "32px IBM Plex Mono";
   ctx.fillStyle = config.textColor;
   ctx.textBaseline = "middle";
   ctx.imageSmoothingEnabled = false;
 
   ctx.textAlign = "left";
-  ctx.fillText(title.toUpperCase(), 3, 128);
+  ctx.fillText(title.toUpperCase(), 10, 200);
+
   ctx.textAlign = "right";
-  ctx.fillText(year.toString().toUpperCase(), 2048 - 30, 128);
+  ctx.fillText(year.toString().toUpperCase(), 502, 300);
 
   const texture = new THREE.CanvasTexture(canvas);
   Object.assign(texture, {
@@ -64,6 +66,7 @@ const createTextTexture = (title, year) => {
 
   return texture;
 };
+
 
 const createTextureAtlas = (textures, isText = false) => {
   const atlasSize = Math.ceil(Math.sqrt(textures.length));
@@ -102,27 +105,19 @@ const createTextureAtlas = (textures, isText = false) => {
 
 const loadTextures = () => {
   const textureLoader = new THREE.TextureLoader();
-  const imageTextures = [];
-  let loadedCount = 0;
 
-  return new Promise( (resolve) => {
-    projects.forEach((project) => {
-      const texture = textureLoader.load(project.image, () => {
-        if(++loadedCount === projects.length) resolve(imageTextures);
+  return Promise.all(
+    projects.map(project => new Promise(resolve => {
+      textureLoader.load(project.image, texture => {
+        resolve(texture);
       });
-
-      Object.assign(texture, {
-        wrapS: THREE.ClampToEdgeWrapping,
-        wrapT: THREE.ClampToEdgeWrapping,
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-      });
-
-      imageTextures.push(texture);
-      textTextures.push(createTextTexture(project.title, project.year));
-    });
+    }))
+  ).then(imageTextures => {
+    textTextures = projects.map(project => createTextTexture(project.title, project.year));
+    return imageTextures;
   });
 };
+
 
 const updateMousePosition = (event) => {
   const rect = renderer.domElement.getBoundingClientRect();
@@ -190,18 +185,21 @@ const onPointerUp = (event) => {
       const radius = Math.sqrt(screenX * screenX + screenY * screenY);
       const distortion = 1.0 - 0.08 * radius * radius;
 
-      let worldX =
-        screenX * distortion * (rect.width / rect.width) * zoomLevel + offset.x;
+      const aspectRatio = rect.width / rect.height;
 
+      let worldX = screenX * distortion * aspectRatio * zoomLevel + offset.x;
       let worldY = screenY * distortion * zoomLevel + offset.y;
 
       const cellX = Math.floor(worldX / config.cellSize);
       const cellY = Math.floor(worldY / config.cellSize);
-      const texIndex = Math.floor((cellX + cellY * 3.0) % projects.length);
-      const actualIndex = texIndex < 0 ? projects.length + texIndex : texIndex;
 
-      if (projects[actualIndex]?.href) {
-        window.location.href = projects[actualIndex].href;
+      let texIndex = (cellX + cellY * config.gridColumns) % projects.length;
+      if (texIndex < 0) texIndex += projects.length;
+
+      console.log({cellX, cellY, texIndex, worldX, worldY, offset, zoomLevel});
+
+      if (projects[texIndex]?.href) {
+        window.location.href = projects[texIndex].href;
       }
     }
   }
@@ -270,7 +268,7 @@ const init = async () => {
   const bgColor = rgbaToArray(config.backgroundColor);
   renderer.setClearColor(
     new THREE.Color(bgColor[0], bgColor[1], bgColor[2]),
-      bgColor[3]
+    bgColor[3]
   );
   container.appendChild(renderer.domElement);
 
@@ -279,15 +277,16 @@ const init = async () => {
   const textAtlas = createTextureAtlas(textTextures, true);
 
   const uniforms = {
+    uGridColumns: {
+      value: 4.0
+    },
     uOffset: {
       value: new THREE.Vector2(0, 0)
     },
     uResolution: {
       value: new THREE.Vector2(container.offsetWidth, container.offsetHeight),
     },
-    uBorderColor: {
-      value: new THREE.Vector4( ...rgbaToArray(config.borderColor)),
-    },
+    uBorderColor: { value: new THREE.Vector4(0, 0, 0, 1) },
     uHoverColor: {
       value: new THREE.Vector4( ...rgbaToArray(config.hoverColor)),
     },
@@ -312,6 +311,7 @@ const init = async () => {
     uTextAtlas:{
       value:textAtlas
     },
+
   };
   const geometry = new THREE.PlaneGeometry(2, 2);
   const material = new THREE.ShaderMaterial({
@@ -326,4 +326,4 @@ const init = async () => {
   animate();
 
 };
-init();
+init(); 

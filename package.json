@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
+    "glsl-loader": "^0.0.1",
     "sass": "^1.89.1",
     "vite": "6.3.5"
   },
