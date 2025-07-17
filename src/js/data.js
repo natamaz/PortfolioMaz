@@ -96,7 +96,24 @@ export const projects = [
     year: 2018,
     href: 'https://natamaz.github.io/Cadaster1/',
   },
-
+  {
+    title: 'Product',
+    image: `${BASE_PATH}img/img-30.jpg`,
+    year: 2025,
+    href: 'https://natamaz.github.io/Product/',
+  },
+  {
+    title: 'Show',
+    image: `${BASE_PATH}img/img-31.jpg`,
+    year: 2025,
+    href: 'https://natamaz.github.io/show/',
+  },
+  {
+    title: 'Fashion',
+    image: `${BASE_PATH}img/img-32.jpg`,
+    year: 2025,
+    href: 'https://natamaz.github.io/Fashion/',
+  },
 ]
 
 //
