@@ -114,6 +114,12 @@ export const projects = [
     year: 2025,
     href: 'https://natamaz.github.io/Fashion/',
   },
+  {
+    title: 'Art',
+    image: `${BASE_PATH}img/img-33.jpg`,
+    year: 2025,
+    href: 'https://natamaz.github.io/Art/',
+  },
 ]
 
 //
